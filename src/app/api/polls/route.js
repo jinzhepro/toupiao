@@ -18,17 +18,12 @@ export async function GET() {
         if (pollData.id) {
           // 获取评分数据
           const scores = pollData.scores ? JSON.parse(pollData.scores) : null;
-
           return {
             id,
-            question: pollData.question || "国贸集团2025年半年度民主测评票",
+            status: pollData.status || "pending",
             createdAt: pollData.createdAt,
             completedAt: pollData.completedAt || null,
-            status: pollData.status || (scores ? "completed" : "active"),
             scores: scores,
-            totalMembers: pollData.totalMembers
-              ? parseInt(pollData.totalMembers)
-              : null,
           };
         }
         return null;
@@ -57,6 +52,7 @@ export async function POST(request) {
     // 存储投票信息
     const pollData = {
       id: id,
+      status: "pending",
       createdAt: new Date().toISOString(),
     };
 
@@ -67,6 +63,7 @@ export async function POST(request) {
 
     const response = {
       id,
+      status: "pending",
       createdAt: new Date().toISOString(),
     };
 

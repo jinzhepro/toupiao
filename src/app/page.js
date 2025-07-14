@@ -16,11 +16,71 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetchPolls();
-    checkCurrentPoll();
-    checkCompletedPoll();
-    loadVotedMembers();
+    checkAndValidatePoll();
   }, []);
+
+  // 检查并验证投票ID
+  const checkAndValidatePoll = async () => {
+    try {
+      // 先检查本地存储
+      const savedPoll = localStorage.getItem("currentPoll");
+      const savedResults = localStorage.getItem("pollResults");
+
+      if (savedPoll || savedResults) {
+        const pollId = savedPoll
+          ? JSON.parse(savedPoll).id
+          : JSON.parse(savedResults).pollId;
+
+        if (pollId) {
+          // 验证服务器上是否存在该投票ID
+          const response = await fetch(`/api/polls/${pollId}`);
+
+          if (response.ok) {
+            // 投票ID存在，继续正常流程
+            checkCurrentPoll();
+            checkCompletedPoll();
+            loadVotedMembers();
+          } else if (response.status === 404) {
+            // 投票ID不存在，重置本地状态
+            console.log("投票ID不存在于服务器，重置本地状态");
+            resetLocalState();
+            // 可选：显示提示信息
+          } else {
+            // 其他错误，继续使用本地数据
+            checkCurrentPoll();
+            checkCompletedPoll();
+            loadVotedMembers();
+          }
+        } else {
+          // 没有有效的投票ID，重置状态
+          resetLocalState();
+        }
+      } else {
+        // 没有本地数据，直接加载
+        loadVotedMembers();
+      }
+
+      // 获取所有投票列表
+      await fetchPolls();
+    } catch (error) {
+      console.error("验证投票ID失败:", error);
+      // 出错时继续使用本地数据
+      checkCurrentPoll();
+      checkCompletedPoll();
+      loadVotedMembers();
+      await fetchPolls();
+    }
+  };
+
+  // 重置本地状态
+  const resetLocalState = () => {
+    localStorage.removeItem("currentPoll");
+    localStorage.removeItem("pollScores");
+    localStorage.removeItem("pollResults");
+    setCurrentPoll(null);
+    setCompletedPoll(null);
+    setVotedMembers([]);
+  };
 
   // 加载已投票成员
   const loadVotedMembers = () => {
@@ -339,6 +399,18 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* 投票ID显示 */}
+      {(currentPoll || completedPoll) && (
+        <div className="mt-8 text-center">
+          <div className="bg-gray-100 rounded-lg p-4 inline-block">
+            <div className="text-sm text-gray-600 mb-1">投票ID</div>
+            <div className="text-lg font-mono font-bold text-gray-800">
+              {completedPoll ? completedPoll.pollId : currentPoll?.id}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

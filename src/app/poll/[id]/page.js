@@ -193,7 +193,7 @@ export default function ToupiaoPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-1">
         {/* 导航栏 */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex justify-between items-center">
@@ -225,7 +225,7 @@ export default function ToupiaoPage() {
         </div>
 
         {/* 成员名单 */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-2">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
             成员评分
           </h2>
@@ -342,45 +342,48 @@ export default function ToupiaoPage() {
               <div className="text-green-700 font-semibold text-lg mb-2">
                 所有成员评分完成，请提交！
               </div>
-              {isComplete && (
-                <button
-                  onClick={completePoll}
-                  disabled={isSubmitting}
-                  className={`font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center min-w-[120px] ${
-                    isSubmitting
-                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      : "bg-green-500 hover:bg-green-700 text-white"
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      提交中...
-                    </>
-                  ) : (
-                    "提交表单"
-                  )}
-                </button>
-              )}
+              <div className="justify-center flex">
+                {isComplete && (
+                  <button
+                    onClick={completePoll}
+                    disabled={isSubmitting}
+                    className={`font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center min-w-[120px] ${
+                      isSubmitting
+                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                        : "bg-green-500 hover:bg-green-700 text-white"
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        提交中...
+                      </>
+                    ) : (
+                      "提交表单"
+                    )}
+                  </button>
+                )}
+              </div>
+
               {!isComplete && (
                 <div className="text-orange-600 text-sm">
                   请先完成当前成员的所有评分项

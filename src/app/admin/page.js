@@ -8,9 +8,22 @@ export default function AdminPage() {
   const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [overallAverage, setOverallAverage] = useState(0);
+
+  const ADMIN_PASSWORD = "erty";
 
   useEffect(() => {
-    loadAllPolls();
+    // 检查本地存储是否已经认证过
+    const savedAuth = localStorage.getItem("adminAuthenticated");
+    if (savedAuth === "true") {
+      setIsAuthenticated(true);
+      loadAllPolls();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const loadAllPolls = async () => {
@@ -21,7 +34,12 @@ export default function AdminPage() {
         throw new Error("获取投票数据失败");
       }
       const data = await response.json();
+      console.log("data", data);
+
       setPolls(data);
+
+      // 计算所有成员的平均成绩
+      calculateAndSetOverallAverage(data);
     } catch (err) {
       console.error("加载投票数据失败:", err);
       setError(err.message);
@@ -30,21 +48,32 @@ export default function AdminPage() {
     }
   };
 
+  // 处理密码验证
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      setPasswordError("");
+      localStorage.setItem("adminAuthenticated", "true");
+      loadAllPolls();
+    } else {
+      setPasswordError("密码错误，请重试");
+      setPassword("");
+    }
+  };
+
+  // 退出登录
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPassword("");
+    setPasswordError("");
+    localStorage.removeItem("adminAuthenticated");
+  };
+
   // 计算成员总分
   const calculateMemberTotal = (scores) => {
     if (!scores || !Array.isArray(scores)) return 0;
     return scores.reduce((sum, score) => sum + (score || 0), 0);
-  };
-
-  // 获取等级
-  const getGradeLevel = (totalScore) => {
-    if (totalScore >= 90)
-      return { level: "优秀", color: "text-green-600 bg-green-100" };
-    if (totalScore >= 80)
-      return { level: "良好", color: "text-blue-600 bg-blue-100" };
-    if (totalScore >= 70)
-      return { level: "合格", color: "text-yellow-600 bg-yellow-100" };
-    return { level: "待改进", color: "text-red-600 bg-red-100" };
   };
 
   // 排序成员（按总分降序）
@@ -59,6 +88,85 @@ export default function AdminPage() {
       }))
       .sort((a, b) => b.total - a.total);
   };
+
+  // 计算并设置所有成员的平均分
+  const calculateAndSetOverallAverage = (pollsData) => {
+    const completedPolls = pollsData.filter(
+      (poll) => poll.status === "completed" && poll.scores
+    );
+    if (completedPolls.length === 0) {
+      setOverallAverage(0);
+      return;
+    }
+
+    let totalScore = 0;
+    let totalMembers = 0;
+
+    completedPolls.forEach((poll) => {
+      Object.values(poll.scores).forEach((scores) => {
+        if (Array.isArray(scores)) {
+          const memberTotal = calculateMemberTotal(scores);
+          totalScore += memberTotal;
+          totalMembers++;
+        }
+      });
+    });
+
+    const average =
+      totalMembers > 0 ? (totalScore / totalMembers).toFixed(1) : 0;
+    setOverallAverage(average);
+  };
+
+  // 如果未认证，显示密码输入页面
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              管理后台登录
+            </h1>
+            <p className="text-gray-600">请输入管理员密码</p>
+          </div>
+
+          <form onSubmit={handlePasswordSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                密码
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="请输入密码"
+                required
+              />
+              {passwordError && (
+                <p className="mt-2 text-sm text-red-600">{passwordError}</p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors"
+            >
+              登录
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <a
+              href="/"
+              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              ← 返回主页
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -93,12 +201,20 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4">
         {/* 页面标题 */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 text-center">
-            投票管理后台
-          </h1>
-          <p className="text-gray-600 text-center mt-2">
-            查看所有投票数据和成员得分统计
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">投票管理后台</h1>
+              <p className="text-gray-600 mt-2">
+                查看所有投票数据和成员得分统计
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
+            >
+              退出登录
+            </button>
+          </div>
         </div>
 
         {/* 统计概览 */}
@@ -177,82 +293,73 @@ export default function AdminPage() {
 
                   {/* 成员得分表格 */}
                   {sortedMembers.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full table-auto">
-                        <thead>
-                          <tr className="bg-gray-50">
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              排名
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              成员姓名
-                            </th>
-                            {d.map((item) => (
-                              <th
-                                key={item.name}
-                                className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                              >
-                                {item.name}
+                    <div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full table-auto">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                排名
                               </th>
-                            ))}
-                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              总分
-                            </th>
-                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              等级
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {sortedMembers.map((member, index) => {
-                            const grade = getGradeLevel(member.total);
-                            return (
-                              <tr
-                                key={member.name}
-                                className="hover:bg-gray-50"
-                              >
-                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  #{index + 1}
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {member.name}
-                                </td>
-                                {member.scores &&
-                                  member.scores.map((score, scoreIndex) => (
-                                    <td
-                                      key={scoreIndex}
-                                      className="px-2 py-4 whitespace-nowrap text-sm text-center"
-                                    >
-                                      <span
-                                        className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                          score >= 9
-                                            ? "bg-green-100 text-green-800"
-                                            : score >= 8
-                                            ? "bg-blue-100 text-blue-800"
-                                            : score >= 7
-                                            ? "bg-yellow-100 text-yellow-800"
-                                            : "bg-red-100 text-red-800"
-                                        }`}
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                成员姓名
+                              </th>
+                              {d.map((item) => (
+                                <th
+                                  key={item.name}
+                                  className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                >
+                                  {item.name}
+                                </th>
+                              ))}
+                              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                总分
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {sortedMembers.map((member, index) => {
+                              return (
+                                <tr
+                                  key={member.name}
+                                  className="hover:bg-gray-50"
+                                >
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    #{index + 1}
+                                  </td>
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {member.name}
+                                  </td>
+                                  {member.scores &&
+                                    member.scores.map((score, scoreIndex) => (
+                                      <td
+                                        key={scoreIndex}
+                                        className="px-2 py-4 whitespace-nowrap text-sm text-center"
                                       >
-                                        {score || 0}
-                                      </span>
-                                    </td>
-                                  ))}
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-center font-semibold">
-                                  {member.total}
-                                </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-center">
-                                  <span
-                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${grade.color}`}
-                                  >
-                                    {grade.level}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                        <span
+                                          className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                            score >= 9
+                                              ? "bg-green-100 text-green-800"
+                                              : score >= 8
+                                              ? "bg-blue-100 text-blue-800"
+                                              : score >= 7
+                                              ? "bg-yellow-100 text-yellow-800"
+                                              : "bg-red-100 text-red-800"
+                                          }`}
+                                        >
+                                          {score || 0}
+                                        </span>
+                                      </td>
+                                    ))}
+                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-center font-semibold">
+                                    {member.total}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center text-gray-500 py-8">

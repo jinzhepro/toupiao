@@ -3,16 +3,14 @@ import { getRedisClient } from "../../../../lib/redis";
 export async function GET(request, { params }) {
   try {
     const redis = await getRedisClient();
-    const pollData = await redis.hGetAll(`poll:${params.id}`);
+    const pollData = await redis.exists(`poll:${params.id}`);
 
-    if (!pollData.question) {
+    if (!pollData) {
       return Response.json({ error: "投票不存在" }, { status: 404 });
     }
 
     return Response.json({
       id: params.id,
-      question: pollData.question,
-      options: JSON.parse(pollData.options || "[]"),
       createdAt: pollData.createdAt,
     });
   } catch (error) {
@@ -35,6 +33,7 @@ export async function PUT(request, { params }) {
     // 更新投票的评分数据
     await redis.hSet(`poll:${params.id}`, {
       scores: JSON.stringify(scores),
+      status: "completed",
       completedAt,
     });
 
