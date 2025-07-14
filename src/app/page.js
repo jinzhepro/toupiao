@@ -247,18 +247,9 @@ export default function HomePage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <div></div>
-          <h1 className="text-4xl font-bold text-gray-800 text-center">
-            国贸集团2025年半年度民主测评票
-          </h1>
-          <Link
-            href="/admin"
-            className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-md transition-colors"
-          >
-            管理后台
-          </Link>
-        </div>
+        <h1 className="text-4xl mb-2 font-bold text-gray-800 text-center">
+          国贸集团2025年半年度民主测评票
+        </h1>
         <p className="text-gray-600 mb-6">
           个人绩效考评得分共100分，其中95&le;优秀&le;100分，85分&le;良好&lt;95分，75分&le;合格&lt;85分，
           65分&le;基本合格&lt;75分，65分以下为不合格；A优秀7人，良好、合格32-34人；基本合格、不合格3-5人
@@ -326,6 +317,15 @@ export default function HomePage() {
             <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
               已投票成员 ({votedMembers.length}/{membersList.length})
             </h3>
+
+            {/* 提示信息 */}
+            <div className="mb-4 text-center text-sm text-gray-600 bg-blue-50 rounded-lg p-3">
+              💡 提示：点击{" "}
+              <span className="font-semibold text-blue-700">已完成</span>、
+              <span className="font-semibold text-orange-700">进行中</span> 或
+              <span className="font-semibold text-blue-700">当前</span>{" "}
+              的成员可以查看或编辑评分
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {membersList.map((member, index) => {
                 const isVoted = votedMembers.includes(member);
@@ -347,16 +347,31 @@ export default function HomePage() {
                       ));
                 }
 
+                // 处理成员卡片点击事件
+                const handleMemberClick = () => {
+                  if (isVoted || isInProgress) {
+                    // 已投票或进行中的成员，跳转到该成员的投票页面进行查看/编辑
+                    router.push(`/poll/${index + 1}`);
+                  } else if (isCurrent) {
+                    // 当前成员，直接继续投票
+                    router.push(`/poll/${index + 1}`);
+                  }
+                  // 未开始的成员不可点击
+                };
+
+                const isClickable = isVoted || isInProgress || isCurrent;
+
                 return (
                   <div
                     key={member}
+                    onClick={isClickable ? handleMemberClick : undefined}
                     className={`p-3 rounded-lg border text-center transition-colors ${
                       isVoted
-                        ? "bg-green-50 border-green-200 text-green-800"
+                        ? "bg-green-50 border-green-200 text-green-800 cursor-pointer hover:bg-green-100"
                         : isInProgress
-                        ? "bg-orange-50 border-orange-200 text-orange-800"
+                        ? "bg-orange-50 border-orange-200 text-orange-800 cursor-pointer hover:bg-orange-100"
                         : isCurrent
-                        ? "bg-blue-50 border-blue-200 text-blue-800"
+                        ? "bg-blue-50 border-blue-200 text-blue-800 cursor-pointer hover:bg-blue-100"
                         : "bg-gray-50 border-gray-200 text-gray-600"
                     }`}
                   >
@@ -372,6 +387,9 @@ export default function HomePage() {
                         ? "● 当前"
                         : "○ 待评分"}
                     </div>
+                    {isClickable && (
+                      <div className="text-xs text-gray-500 mt-1">点击查看</div>
+                    )}
                   </div>
                 );
               })}

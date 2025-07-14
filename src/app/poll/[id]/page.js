@@ -66,8 +66,10 @@ export default function ToupiaoPage() {
     // 转换为数组格式保存到本地存储
     const arrayFormatScores = {};
     Object.keys(newScores).forEach((memberName) => {
-      arrayFormatScores[memberName] = d.map(
-        (item) => newScores[memberName][item.name] || null
+      arrayFormatScores[memberName] = d.map((item) =>
+        newScores[memberName][item.name] !== undefined
+          ? newScores[memberName][item.name]
+          : null
       );
     });
 
@@ -142,8 +144,10 @@ export default function ToupiaoPage() {
       // 转换为数组格式保存最终结果
       const arrayFormatResults = {};
       Object.keys(scores).forEach((memberName) => {
-        arrayFormatResults[memberName] = d.map(
-          (item) => scores[memberName][item.name] || null
+        arrayFormatResults[memberName] = d.map((item) =>
+          scores[memberName][item.name] !== undefined
+            ? scores[memberName][item.name]
+            : null
         );
       });
 
@@ -197,17 +201,28 @@ export default function ToupiaoPage() {
         {/* 导航栏 */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex justify-between items-center">
-            <button
-              onClick={handlePrevMember}
-              className="px-4 py-2 rounded-lg font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
-            >
-              {isFirstMember ? "← 返回主页" : "← 上一位成员"}
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => router.push("/")}
+                className="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-500 text-white hover:bg-gray-600"
+              >
+                🏠 返回主页
+              </button>
+              <button
+                onClick={handlePrevMember}
+                className="px-4 py-2 rounded-lg font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
+              >
+                {isFirstMember ? "← 上一位" : "← 上一位成员"}
+              </button>
+            </div>
 
             <div className="text-center">
               <span className="text-lg font-semibold text-gray-700">
                 {currentId} / {membersList.length}
               </span>
+              <div className="text-sm text-gray-500">
+                {membersList[currentId - 1]}
+              </div>
             </div>
 
             <button

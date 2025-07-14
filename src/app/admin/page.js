@@ -102,8 +102,13 @@ export default function AdminPage() {
     let totalScore = 0;
     let totalMembers = 0;
 
+    const calculateData = {
+      scores: [],
+    };
+
     completedPolls.forEach((poll) => {
-      Object.values(poll.scores).forEach((scores) => {
+      Object.keys(poll.scores).forEach((memberName) => {
+        const scores = poll.scores[memberName];
         if (Array.isArray(scores)) {
           const memberTotal = calculateMemberTotal(scores);
           totalScore += memberTotal;
