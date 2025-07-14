@@ -206,13 +206,13 @@ export default function ToupiaoPage() {
                 onClick={() => router.push("/")}
                 className="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-500 text-white hover:bg-gray-600"
               >
-                🏠 返回主页
+                主页
               </button>
               <button
                 onClick={handlePrevMember}
                 className="px-4 py-2 rounded-lg font-medium transition-colors bg-blue-500 text-white hover:bg-blue-600"
               >
-                {isFirstMember ? "← 上一位" : "← 上一位成员"}
+                {isFirstMember ? "上一位" : "上一位"}
               </button>
             </div>
 
@@ -234,7 +234,7 @@ export default function ToupiaoPage() {
                   : "bg-blue-500 text-white hover:bg-blue-600"
               }`}
             >
-              下一位成员 →
+              下一位
             </button>
           </div>
         </div>
