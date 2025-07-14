@@ -15,19 +15,20 @@ export async function GET() {
     const polls = await Promise.all(
       pollIds.map(async (id) => {
         const pollData = await redis.hGetAll(`poll:${id}`);
-        if (pollData.question) {
-          const totalVotes = await redis.hGetAll(`poll:${id}:votes`);
-          const totalVoteCount = Object.values(totalVotes).reduce(
-            (sum, votes) => sum + parseInt(votes || 0),
-            0
-          );
+        if (pollData.id) {
+          // 获取评分数据
+          const scores = pollData.scores ? JSON.parse(pollData.scores) : null;
 
           return {
             id,
-            question: pollData.question,
-            options: JSON.parse(pollData.options || "[]"),
+            question: pollData.question || "国贸集团2025年半年度民主测评票",
             createdAt: pollData.createdAt,
-            totalVotes: totalVoteCount,
+            completedAt: pollData.completedAt || null,
+            status: pollData.status || (scores ? "completed" : "active"),
+            scores: scores,
+            totalMembers: pollData.totalMembers
+              ? parseInt(pollData.totalMembers)
+              : null,
           };
         }
         return null;
@@ -48,43 +49,28 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { question, options } = await request.json();
-
-    if (!question || !options || options.length < 2) {
-      return Response.json(
-        { error: "问题和至少两个选项是必需的" },
-        { status: 400 }
-      );
-    }
-
     const redis = await getRedisClient();
 
     // 生成唯一ID
     const id = `poll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // 存储投票信息
-    await redis.hSet(`poll:${id}`, {
-      question,
-      options: JSON.stringify(options),
+    const pollData = {
+      id: id,
       createdAt: new Date().toISOString(),
-    });
+    };
 
-    // 初始化投票计数
-    const voteData = {};
-    options.forEach((option) => {
-      voteData[option] = "0";
-    });
-    await redis.hSet(`poll:${id}:votes`, voteData);
+    await redis.hSet(`poll:${id}`, pollData);
 
     // 添加到投票列表
     await redis.sAdd("polls:all", id);
 
-    return Response.json({
+    const response = {
       id,
-      question,
-      options,
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    return Response.json(response);
   } catch (error) {
     console.error("创建投票失败:", error);
     return Response.json({ error: "创建投票失败" }, { status: 500 });
