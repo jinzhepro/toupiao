@@ -335,16 +335,26 @@ export default function HomePage() {
                 // 检查是否正在进行中（有数据但未完成）
                 const savedScores = localStorage.getItem("pollScores");
                 let isInProgress = false;
+                let memberTotalScore = 0;
+
                 if (savedScores) {
                   const scoresData = JSON.parse(savedScores);
                   const memberScores = scoresData[member];
-                  isInProgress =
-                    memberScores &&
-                    Array.isArray(memberScores) &&
-                    (memberScores.length < d.length ||
+
+                  if (memberScores && Array.isArray(memberScores)) {
+                    // 计算总分
+                    memberTotalScore = memberScores.reduce(
+                      (sum, score) => sum + (score || 0),
+                      0
+                    );
+
+                    // 检查是否进行中
+                    isInProgress =
+                      memberScores.length < d.length ||
                       memberScores.some(
                         (score) => score === null || score === undefined
-                      ));
+                      );
+                  }
                 }
 
                 // 处理成员卡片点击事件
@@ -387,6 +397,12 @@ export default function HomePage() {
                         ? "● 当前"
                         : "○ 待评分"}
                     </div>
+                    {/* 显示总分 */}
+                    {(isVoted || isInProgress) && memberTotalScore > 0 && (
+                      <div className="text-xs mt-1 font-semibold">
+                        总分: {memberTotalScore}
+                      </div>
+                    )}
                     {isClickable && (
                       <div className="text-xs text-gray-500 mt-1">点击查看</div>
                     )}
