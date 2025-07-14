@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [overallAverage, setOverallAverage] = useState(0);
+  const [averageData, setAverageData] = useState([]);
 
   const ADMIN_PASSWORD = "erty";
 
@@ -102,24 +103,41 @@ export default function AdminPage() {
     let totalScore = 0;
     let totalMembers = 0;
 
-    const calculateData = {
-      scores: [],
-    };
+    const calculateData = [];
+    const all = {};
 
     completedPolls.forEach((poll) => {
       Object.keys(poll.scores).forEach((memberName) => {
         const scores = poll.scores[memberName];
-        if (Array.isArray(scores)) {
-          const memberTotal = calculateMemberTotal(scores);
-          totalScore += memberTotal;
-          totalMembers++;
+        if (all[memberName]) {
+          all[memberName] = all[memberName].map((score, index) => {
+            return score + (scores[index] || 0);
+          });
+        } else {
+          all[memberName] = [...scores];
         }
       });
     });
+    Object.keys(all).forEach((memberName) => {
+      calculateData.push({
+        name: memberName,
+        scores: all[memberName].map((score) =>
+          (score / completedPolls.length).toFixed(2)
+        ),
+        total: Number(
+          calculateMemberTotal(
+            all[memberName].map((score) => score / completedPolls.length)
+          ).toFixed(2)
+        ),
+      });
+    });
+    console.log("all", all);
 
-    const average =
-      totalMembers > 0 ? (totalScore / totalMembers).toFixed(1) : 0;
-    setOverallAverage(average);
+    console.log("calculateData", calculateData);
+
+    // 按总分排序并保存到状态
+    calculateData.sort((a, b) => b.total - a.total);
+    setAverageData(calculateData);
   };
 
   // 如果未认证，显示密码输入页面
@@ -249,6 +267,92 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+
+        {/* 平均得分统计 */}
+        {averageData.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              成员平均得分统计
+            </h2>
+            <p className="text-gray-600 mb-4">
+              基于 {polls.filter((poll) => poll.status === "completed").length}{" "}
+              次已完成投票的平均数据
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      排名
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      成员姓名
+                    </th>
+                    {d.map((item) => (
+                      <th
+                        key={item.name}
+                        className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        {item.name}
+                      </th>
+                    ))}
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      平均总分
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {averageData.map((member, index) => (
+                    <tr key={member.name} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{index + 1}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {member.name}
+                      </td>
+                      {member.scores.map((score, scoreIndex) => (
+                        <td
+                          key={scoreIndex}
+                          className="px-2 py-4 whitespace-nowrap text-sm text-center"
+                        >
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                              parseFloat(score) >= 9
+                                ? "bg-green-100 text-green-800"
+                                : parseFloat(score) >= 8
+                                ? "bg-blue-100 text-blue-800"
+                                : parseFloat(score) >= 7
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {score}
+                          </span>
+                        </td>
+                      ))}
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-center font-semibold">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            member.total >= 80
+                              ? "bg-green-100 text-green-800"
+                              : member.total >= 70
+                              ? "bg-blue-100 text-blue-800"
+                              : member.total >= 60
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {member.total}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* 投票列表 */}
         {polls.length === 0 ? (
