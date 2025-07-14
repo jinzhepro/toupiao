@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "匿名投票系统",
-  description: "一个基于 Next.js 和 Redis 的匿名投票系统",
+  title: "国贸集团2025年半年度民主测评票",
+  description: "国贸集团2025年半年度民主测评票",
 };
 
 export default function RootLayout({ children }) {
