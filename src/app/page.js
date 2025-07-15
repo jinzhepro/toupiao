@@ -233,6 +233,74 @@ export default function HomePage() {
     setVotedMembers([]);
   };
 
+  // 复制评分详情
+  const copyScoresDetail = async (event) => {
+    try {
+      const savedScores = localStorage.getItem("pollScores");
+
+      if (!savedScores) {
+        alert("暂无评分数据可复制");
+        return;
+      }
+
+      const scoresData = JSON.parse(savedScores);
+
+      // 获取已完成评分的成员
+      const completedMembers = Object.keys(scoresData).filter((member) => {
+        const memberScores = scoresData[member];
+        return (
+          Array.isArray(memberScores) &&
+          memberScores.length === d.length &&
+          memberScores.every((score) => score !== null && score !== undefined)
+        );
+      });
+
+      if (completedMembers.length === 0) {
+        alert("暂无已完成的评分数据可复制");
+        return;
+      }
+
+      // 生成表格格式的评分数据
+      let copyText = "";
+
+      // 数据行：每个成员的评分
+      completedMembers.forEach((member) => {
+        const memberScores = scoresData[member];
+        const totalScore = memberScores.reduce(
+          (sum, score) => sum + (score || 0),
+          0
+        );
+
+        copyText += `${member}\t`;
+        memberScores.forEach((score) => {
+          copyText += `${score || 0}\t`;
+        });
+      });
+
+      await navigator.clipboard.writeText(copyText);
+
+      // 显示成功提示
+      const button = event.target.closest("button");
+      const originalText = button.textContent;
+      button.textContent = "已复制！";
+      button.className = button.className.replace(
+        "bg-green-500 hover:bg-green-600",
+        "bg-blue-500"
+      );
+
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.className = button.className.replace(
+          "bg-blue-500",
+          "bg-green-500 hover:bg-green-600"
+        );
+      }, 2000);
+    } catch (error) {
+      console.error("复制评分详情失败:", error);
+      alert("复制失败，请手动复制评分详情");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -439,8 +507,31 @@ export default function HomePage() {
         <div className="mt-8 text-center">
           <div className="bg-gray-100 rounded-lg p-4 inline-block">
             <div className="text-sm text-gray-600 mb-1">投票ID</div>
-            <div className="text-lg font-mono font-bold text-gray-800">
+            <div className="text-lg font-mono font-bold text-gray-800 mb-3">
               {completedPoll ? completedPoll.pollId : currentPoll?.id}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              {votedMembers.length > 0 && (
+                <button
+                  onClick={copyScoresDetail}
+                  className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center gap-2 justify-center"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2v0"
+                    />
+                  </svg>
+                  复制评分数据
+                </button>
+              )}
             </div>
           </div>
         </div>
