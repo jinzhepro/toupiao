@@ -264,33 +264,59 @@ export default function ToupiaoPage() {
                           </span>
                         )}
                       </label>
-                      {item.details && (
-                        <ul className="mb-2 text-xs text-gray-500 list-disc pl-5">
-                          {item.details.map((desc, idx) => (
-                            <li key={idx}>{desc}</li>
-                          ))}
-                        </ul>
+
+                      {/* 评分标准展示 */}
+                      {item.criteria && (
+                        <div className="mb-3 bg-gray-50 rounded-lg p-3">
+                          <div className="text-xs text-gray-600 mb-2 font-medium">
+                            评分标准：
+                          </div>
+                          <div className="space-y-1">
+                            {item.criteria.map((criterion, idx) => (
+                              <div
+                                key={idx}
+                                className="text-xs text-gray-600 leading-relaxed"
+                              >
+                                • {criterion}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
-                      <div className="flex gap-2 flex-wrap">
-                        {item.scores.map((score) => (
-                          <button
+
+                      <div className="flex gap-2 flex-wrap justify-around">
+                        {item.scores.map((score, scoreIdx) => (
+                          <div
                             key={score}
-                            type="button"
-                            onClick={() =>
-                              handleScoreSelect(
-                                membersList[id - 1],
-                                item.name,
-                                score
-                              )
-                            }
-                            className={`px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-[60px] h-[30px] ${
-                              scores[membersList[id - 1]]?.[item.name] === score
-                                ? "bg-blue-500 text-white border-blue-500"
-                                : "border-gray-300 hover:bg-blue-50 hover:border-blue-300"
-                            }`}
+                            className="flex flex-col  items-center"
                           >
-                            {score}分
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleScoreSelect(
+                                  membersList[id - 1],
+                                  item.name,
+                                  score
+                                )
+                              }
+                              className={`px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors w-[60px] h-[30px] mb-1 ${
+                                scores[membersList[id - 1]]?.[item.name] ===
+                                score
+                                  ? "bg-blue-500 text-white border-blue-500"
+                                  : "border-gray-300 hover:bg-blue-50 hover:border-blue-300"
+                              }`}
+                              title={
+                                item.criteria ? item.criteria[scoreIdx] : ""
+                              }
+                            >
+                              {score}分
+                            </button>
+                            {/* {item.criteria && (
+                              <div className="text-xs text-gray-500 text-center max-w-[120px] leading-tight">
+                                {item.criteria[scoreIdx]?.split("（")[0]}
+                              </div>
+                            )} */}
+                          </div>
                         ))}
                       </div>
                     </div>

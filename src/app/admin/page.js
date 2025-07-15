@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { membersList } from "../../utils/memberList";
 import d from "../../utils/d";
+import * as XLSX from "xlsx";
 
 export default function AdminPage() {
   const [polls, setPolls] = useState([]);
@@ -140,6 +141,144 @@ export default function AdminPage() {
     setAverageData(calculateData);
   };
 
+  // 导出平均得分数据到Excel
+  const exportAverageData = () => {
+    if (averageData.length === 0) {
+      alert("暂无数据可导出");
+      return;
+    }
+
+    // 准备导出数据
+    const exportData = averageData.map((member, index) => {
+      const row = {
+        排名: index + 1,
+        成员姓名: member.name,
+        平均总分: member.total,
+      };
+
+      // 添加各项评分
+      d.forEach((item, itemIndex) => {
+        row[item.name] = member.scores[itemIndex] || 0;
+      });
+
+      return row;
+    });
+
+    // 创建工作簿
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "成员平均得分统计");
+
+    // 生成文件名
+    const fileName = `成员平均得分统计_${new Date()
+      .toLocaleDateString("zh-CN")
+      .replace(/\//g, "-")}.xlsx`;
+
+    // 导出文件
+    XLSX.writeFile(wb, fileName);
+  };
+
+  // 导出单个投票数据到Excel
+  const exportPollData = (poll) => {
+    const sortedMembers = sortMembersByScore(poll);
+
+    if (sortedMembers.length === 0) {
+      alert("该投票暂无数据可导出");
+      return;
+    }
+
+    // 准备导出数据
+    const exportData = sortedMembers.map((member, index) => {
+      const row = {
+        排名: index + 1,
+        成员姓名: member.name,
+        总分: member.total,
+      };
+
+      // 添加各项评分
+      d.forEach((item, itemIndex) => {
+        row[item.name] = member.scores[itemIndex] || 0;
+      });
+
+      return row;
+    });
+
+    // 创建工作簿
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `投票${poll.id}得分统计`);
+
+    // 生成文件名
+    const fileName = `投票${poll.id}_得分统计_${new Date(poll.createdAt)
+      .toLocaleDateString("zh-CN")
+      .replace(/\//g, "-")}.xlsx`;
+
+    // 导出文件
+    XLSX.writeFile(wb, fileName);
+  };
+
+  // 导出所有投票数据到Excel
+  const exportAllData = () => {
+    if (polls.length === 0) {
+      alert("暂无数据可导出");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+
+    // 导出平均数据
+    if (averageData.length > 0) {
+      const averageExportData = averageData.map((member, index) => {
+        const row = {
+          排名: index + 1,
+          成员姓名: member.name,
+          平均总分: member.total,
+        };
+
+        d.forEach((item, itemIndex) => {
+          row[item.name] = member.scores[itemIndex] || 0;
+        });
+
+        return row;
+      });
+
+      const averageWs = XLSX.utils.json_to_sheet(averageExportData);
+      XLSX.utils.book_append_sheet(wb, averageWs, "平均得分统计");
+    }
+
+    // 导出每个投票的数据
+    polls.forEach((poll) => {
+      const sortedMembers = sortMembersByScore(poll);
+
+      if (sortedMembers.length > 0) {
+        const exportData = sortedMembers.map((member, index) => {
+          const row = {
+            排名: index + 1,
+            成员姓名: member.name,
+            总分: member.total,
+          };
+
+          d.forEach((item, itemIndex) => {
+            row[item.name] = member.scores[itemIndex] || 0;
+          });
+
+          return row;
+        });
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        XLSX.utils.book_append_sheet(wb, ws, `投票${poll.id}`);
+      }
+    });
+
+    // 生成文件名
+    const fileName = `投票系统完整数据_${new Date()
+      .toLocaleDateString("zh-CN")
+      .replace(/\//g, "-")}.xlsx`;
+
+    // 导出文件
+    XLSX.writeFile(wb, fileName);
+  };
+
   // 如果未认证，显示密码输入页面
   if (!isAuthenticated) {
     return (
@@ -268,16 +407,78 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* 导出操作区 */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">数据导出</h2>
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={exportAverageData}
+              disabled={averageData.length === 0}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                averageData.length === 0
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-blue-500 text-white hover:bg-blue-600"
+              }`}
+            >
+              导出平均得分统计
+            </button>
+            <button
+              onClick={exportAllData}
+              disabled={polls.length === 0}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                polls.length === 0
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-green-500 text-white hover:bg-green-600"
+              }`}
+            >
+              导出完整数据
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">
+            导出的Excel文件将包含详细的评分数据和统计信息
+          </p>
+        </div>
+
         {/* 平均得分统计 */}
         {averageData.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              成员平均得分统计
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                成员平均得分统计
+              </h2>
+              <button
+                onClick={exportAverageData}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                导出Excel
+              </button>
+            </div>
             <p className="text-gray-600 mb-4">
               基于 {polls.filter((poll) => poll.status === "completed").length}{" "}
               次已完成投票的平均数据
             </p>
+
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={exportAverageData}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors"
+              >
+                导出平均得分数据
+              </button>
+            </div>
 
             <div className="overflow-x-auto">
               <table className="w-full table-auto">
@@ -375,15 +576,38 @@ export default function AdminPage() {
                       <h2 className="text-2xl font-bold text-gray-900">
                         投票 #{poll.id}
                       </h2>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          poll.status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {poll.status === "completed" ? "已完成" : "进行中"}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            poll.status === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {poll.status === "completed" ? "已完成" : "进行中"}
+                        </span>
+                        {sortedMembers.length > 0 && (
+                          <button
+                            onClick={() => exportPollData(poll)}
+                            className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1 text-sm"
+                          >
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                              />
+                            </svg>
+                            导出
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="text-gray-600 text-sm space-y-1">
                       <div>
@@ -403,6 +627,14 @@ export default function AdminPage() {
                   {/* 成员得分表格 */}
                   {sortedMembers.length > 0 ? (
                     <div>
+                      <div className="flex justify-end mb-4">
+                        <button
+                          onClick={() => exportPollData(poll)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors"
+                        >
+                          导出投票数据
+                        </button>
+                      </div>
                       <div className="overflow-x-auto">
                         <table className="w-full table-auto">
                           <thead>
