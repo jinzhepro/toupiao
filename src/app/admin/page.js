@@ -224,54 +224,56 @@ export default function AdminPage() {
       return;
     }
 
-    const wb = XLSX.utils.book_new();
+    // 获取所有已完成的投票
+    const completedPolls = polls.filter(
+      (poll) => poll.status === "completed" && poll.scores
+    );
 
-    // 导出平均数据
-    if (averageData.length > 0) {
-      const averageExportData = averageData.map((member, index) => {
-        const row = {
-          排名: index + 1,
-          成员姓名: member.name,
-          平均总分: member.total,
-        };
-
-        d.forEach((item, itemIndex) => {
-          row[item.name] = member.scores[itemIndex] || 0;
-        });
-
-        return row;
-      });
-
-      const averageWs = XLSX.utils.json_to_sheet(averageExportData);
-      XLSX.utils.book_append_sheet(wb, averageWs, "平均得分统计");
+    if (completedPolls.length === 0) {
+      alert("暂无已完成的投票数据可导出");
+      return;
     }
 
-    // 导出每个投票的数据
-    polls.forEach((poll) => {
-      const sortedMembers = sortMembersByScore(poll);
-
-      if (sortedMembers.length > 0) {
-        const exportData = sortedMembers.map((member, index) => {
-          const row = {
-            排名: index + 1,
-            成员姓名: member.name,
-            总分: member.total,
-          };
-
-          d.forEach((item, itemIndex) => {
-            row[item.name] = member.scores[itemIndex] || 0;
-          });
-
-          return row;
-        });
-
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        XLSX.utils.book_append_sheet(wb, ws, `${poll.id}`);
-      }
+    // 获取所有成员名单
+    const allMembers = new Set();
+    completedPolls.forEach((poll) => {
+      Object.keys(poll.scores).forEach((memberName) => {
+        allMembers.add(memberName);
+      });
     });
 
+    // 转换为数组并排序
+    const membersList = Array.from(allMembers).sort();
+
+    // 准备导出数据
+    const exportData = membersList.map((memberName, index) => {
+      const row = {
+        编号: index + 1,
+        成员姓名: memberName,
+      };
+
+      // 为每个投票添加该成员的总分
+      completedPolls.forEach((poll) => {
+        const pollName = `投票${poll.id}`;
+        const memberScores = poll.scores[memberName];
+
+        if (memberScores && Array.isArray(memberScores)) {
+          row[pollName] = calculateMemberTotal(memberScores);
+        } else {
+          row[pollName] = 0;
+        }
+      });
+
+      return row;
+    });
+
+    // 创建工作簿
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "所有投票总分统计");
+
     // 生成文件名
-    const fileName = `投票系统完整数据_${new Date()
+    const fileName = `所有投票总分统计_${new Date()
       .toLocaleDateString("zh-CN")
       .replace(/\//g, "-")}.xlsx`;
 
@@ -424,18 +426,20 @@ export default function AdminPage() {
             </button>
             <button
               onClick={exportAllData}
-              disabled={polls.length === 0}
+              disabled={
+                polls.filter((poll) => poll.status === "completed").length === 0
+              }
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                polls.length === 0
+                polls.filter((poll) => poll.status === "completed").length === 0
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-green-500 text-white hover:bg-green-600"
               }`}
             >
-              导出完整数据
+              导出所有投票总分对比
             </button>
           </div>
           <p className="text-sm text-gray-500 mt-2">
-            导出的Excel文件将包含详细的评分数据和统计信息
+            导出的Excel文件将包含详细的评分数据和统计信息。"导出所有投票总分对比"将各投票的成员总分汇总到一个表格中便于横向对比。
           </p>
         </div>
 
