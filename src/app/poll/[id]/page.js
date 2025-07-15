@@ -101,11 +101,96 @@ export default function ToupiaoPage() {
     }
   };
 
+  // 检查评分分布是否合理
+  const checkScoreDistribution = () => {
+    try {
+      const savedScores = localStorage.getItem("pollScores");
+      if (!savedScores) return true;
+
+      const scoresData = JSON.parse(savedScores);
+
+      // 获取已完成评分的成员总分
+      const completedScores = [];
+      Object.keys(scoresData).forEach((member) => {
+        const memberScores = scoresData[member];
+        if (
+          Array.isArray(memberScores) &&
+          memberScores.length === d.length &&
+          memberScores.every((score) => score !== null && score !== undefined)
+        ) {
+          const totalScore = memberScores.reduce(
+            (sum, score) => sum + (score || 0),
+            0
+          );
+          completedScores.push(totalScore);
+        }
+      });
+
+      if (completedScores.length === 0) return true;
+
+      // 按等级统计人数
+      const excellent = completedScores.filter(
+        (score) => score >= 95 && score <= 100
+      ).length; // 优秀
+      const good = completedScores.filter(
+        (score) => score >= 85 && score < 95
+      ).length; // 良好
+      const qualified = completedScores.filter(
+        (score) => score >= 75 && score < 85
+      ).length; // 合格
+      const basicQualified = completedScores.filter(
+        (score) => score >= 65 && score < 75
+      ).length; // 基本合格
+      const unqualified = completedScores.filter((score) => score < 65).length; // 不合格
+
+      // 检查是否符合要求：优秀7人，良好、合格33人，基本合格、不合格4人
+      const goodAndQualified = good + qualified;
+      const basicAndUnqualified = basicQualified + unqualified;
+
+      let warnings = [];
+
+      if (excellent > 7) {
+        warnings.push(`优秀等级人数过多（${excellent}人），标准要求7人`);
+      }
+
+      if (goodAndQualified > 33) {
+        warnings.push(
+          `良好+合格等级人数过多（${goodAndQualified}人），标准要求33人`
+        );
+      }
+
+      if (basicAndUnqualified > 4) {
+        warnings.push(
+          `基本合格+不合格等级人数过多（${basicAndUnqualified}人），标准要求4人`
+        );
+      }
+
+      if (warnings.length > 0) {
+        const message = `评分分布不符合标准要求！\n\n当前分布：\n• 优秀(95-100分)：${excellent}人\n• 良好(85-94分)：${good}人\n• 合格(75-84分)：${qualified}人\n• 基本合格(65-74分)：${basicQualified}人\n• 不合格(65分以下)：${unqualified}人\n\n标准要求：\n• 优秀：7人\n• 良好+合格：33人\n• 基本合格+不合格：4人\n\n❌ ${warnings.join(
+          "\n"
+        )}\n\n请调整评分后再继续！`;
+
+        alert(message);
+        return false; // 强制阻止继续
+      }
+
+      return true;
+    } catch (error) {
+      console.error("检查评分分布失败:", error);
+      return true; // 出错时允许继续
+    }
+  };
+
   // 导航到下一位成员
   const handleNextMember = () => {
     const currentId = parseInt(id);
 
     if (currentId < membersList.length && isCurrentMemberComplete()) {
+      // 检查评分分布
+      if (!checkScoreDistribution()) {
+        return; // 用户选择不继续
+      }
+
       const nextId = currentId + 1;
       updateCurrentMemberInStorage(nextId);
       router.push(`/poll/${nextId}`);
@@ -127,6 +212,11 @@ export default function ToupiaoPage() {
   // 完成投票
   const completePoll = async () => {
     if (isSubmitting) return; // 防止重复提交
+
+    // 在提交前再次检查评分分布
+    if (!checkScoreDistribution()) {
+      return; // 用户选择不继续
+    }
 
     setIsSubmitting(true);
     try {
