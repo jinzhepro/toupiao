@@ -206,7 +206,7 @@ export default function AdminPage() {
     // 创建工作簿
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `投票${poll.id}得分统计`);
+    XLSX.utils.book_append_sheet(wb, ws, `${poll.id}`);
 
     // 生成文件名
     const fileName = `投票${poll.id}_得分统计_${new Date(poll.createdAt)
@@ -266,7 +266,7 @@ export default function AdminPage() {
         });
 
         const ws = XLSX.utils.json_to_sheet(exportData);
-        XLSX.utils.book_append_sheet(wb, ws, `投票${poll.id}`);
+        XLSX.utils.book_append_sheet(wb, ws, `${poll.id}`);
       }
     });
 
@@ -471,14 +471,14 @@ export default function AdminPage() {
               次已完成投票的平均数据
             </p>
 
-            <div className="flex justify-end mb-4">
+            {/* <div className="flex justify-end mb-4">
               <button
                 onClick={exportAverageData}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors"
               >
                 导出平均得分数据
               </button>
-            </div>
+            </div> */}
 
             <div className="overflow-x-auto">
               <table className="w-full table-auto">
@@ -627,14 +627,6 @@ export default function AdminPage() {
                   {/* 成员得分表格 */}
                   {sortedMembers.length > 0 ? (
                     <div>
-                      <div className="flex justify-end mb-4">
-                        <button
-                          onClick={() => exportPollData(poll)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors"
-                        >
-                          导出投票数据
-                        </button>
-                      </div>
                       <div className="overflow-x-auto">
                         <table className="w-full table-auto">
                           <thead>
